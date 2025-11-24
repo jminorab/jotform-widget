@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cascading Location Widget</title>
     <!-- JotForm Custom Widget Library -->
-    <!-- Changed to https to ensure loading in secure environments -->
     <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
     <style>
-        /* Basic Styling to match generic form looks */
         body {
             font-family: 'Verdana', sans-serif;
             font-size: 14px;
@@ -41,10 +39,9 @@
             border-radius: 4px;
             width: 100%;
             font-size: 14px;
-            box-sizing: border-box; /* Ensures padding doesn't break width */
+            box-sizing: border-box;
         }
 
-        /* Utility class to hide elements */
         .hidden {
             display: none !important;
         }
@@ -59,7 +56,6 @@
             <label for="stateDropdown">State</label>
             <select id="stateDropdown">
                 <option value="">Select State...</option>
-                <!-- Options populated by JS -->
             </select>
             <input type="text" id="stateInput" class="hidden" placeholder="Enter State">
         </div>
@@ -85,27 +81,17 @@
     </div>
 
     <script type="text/javascript">
-        // --- MOCK JFCustomWidget FOR LOCAL TESTING ---
-        // This ensures the widget doesn't crash if the JotForm library fails to load 
-        // (e.g., in a local preview or restricted environment).
+        // --- MOCK FOR TESTING ---
         if (typeof JFCustomWidget === 'undefined') {
-            console.warn("JotForm library not loaded. Using mock object for testing.");
             window.JFCustomWidget = {
-                subscribe: function(event, callback) {
-                    console.log(`Mock: Subscribed to '${event}'`);
-                    if (event === 'ready') setTimeout(callback, 100);
-                },
-                requestFrameResize: function(data) {
-                    console.log("Mock: requestFrameResize", data);
-                },
-                sendSubmit: function(data) {
-                    console.log("Mock: sendSubmit", data);
-                }
+                subscribe: function(e, c) { if(e==='ready') setTimeout(c, 100); },
+                requestFrameResize: function() {},
+                sendSubmit: function(d) { console.log("Submit:", d); },
+                sendData: function(d) { console.log("Data Sent:", d); }
             };
         }
 
-        // --- 1. FAKE DATA CONFIGURATION ---
-        // Structure: State -> Districts -> Sites
+        // --- 1. DATA CONFIGURATION ---
         const data = {
             "Arizona": {
                 "Amphi": ["Copper Creek Elementary", "Canyon del Oro High", "Ironwood Ridge"],
@@ -121,85 +107,65 @@
         const stateSelect = document.getElementById('stateDropdown');
         const districtSelect = document.getElementById('districtDropdown');
         const siteSelect = document.getElementById('siteDropdown');
-
         const stateInput = document.getElementById('stateInput');
         const districtInput = document.getElementById('districtInput');
         const siteInput = document.getElementById('siteInput');
 
         // --- 3. INITIALIZATION ---
         (function() {
-            // Populate States
             Object.keys(data).forEach(state => {
                 let option = document.createElement('option');
                 option.value = state;
                 option.text = state;
                 stateSelect.add(option);
             });
-            // Add "Other" to State
             let otherOption = document.createElement('option');
             otherOption.value = "Other";
             otherOption.text = "Other";
             stateSelect.add(otherOption);
 
-            // Notify JotForm widget is ready
-            // Now safe to call even if library didn't load (due to mock)
             JFCustomWidget.subscribe("ready", function(){
                 JFCustomWidget.requestFrameResize({height: document.body.offsetHeight});
             });
         })();
 
-        // --- 4. EVENT LISTENERS ---
+        // --- 4. CORE LOGIC ---
 
-        // State Change
-        stateSelect.addEventListener('change', function() {
-            const val = this.value;
+        function handleStateChange() {
+            const val = stateSelect.value;
             resetDistrict();
             resetSite();
 
             if (val === "Other") {
-                // Show manual inputs for ALL
                 stateInput.classList.remove('hidden');
-                
-                // Hide dropdowns for child levels, show inputs
                 districtSelect.classList.add('hidden');
                 districtInput.classList.remove('hidden');
-                
                 siteSelect.classList.add('hidden');
                 siteInput.classList.remove('hidden');
             } else if (val) {
-                // Specific State Selected
                 stateInput.classList.add('hidden');
-                
-                // Populate Districts
                 populateDistricts(val);
-                districtSelect.classList.remove('hidden'); // Ensure dropdown is visible
-                districtInput.classList.add('hidden');     // Ensure input is hidden
+                districtSelect.classList.remove('hidden');
+                districtInput.classList.add('hidden');
                 districtSelect.disabled = false;
             } else {
-                // Nothing selected
                 stateInput.classList.add('hidden');
                 districtSelect.disabled = true;
             }
-            JFCustomWidget.requestFrameResize({height: document.body.offsetHeight});
-        });
+            resizeAndBroadcast();
+        }
 
-        // District Change
-        districtSelect.addEventListener('change', function() {
+        function handleDistrictChange() {
             const stateVal = stateSelect.value;
-            const distVal = this.value;
+            const distVal = districtSelect.value;
             resetSite();
 
             if (distVal === "Other") {
-                // Show manual inputs for District and Site
                 districtInput.classList.remove('hidden');
-                
                 siteSelect.classList.add('hidden');
                 siteInput.classList.remove('hidden');
             } else if (distVal) {
-                // Specific District Selected
                 districtInput.classList.add('hidden');
-                
-                // Populate Sites
                 populateSites(stateVal, distVal);
                 siteSelect.classList.remove('hidden');
                 siteInput.classList.add('hidden');
@@ -208,27 +174,70 @@
                 districtInput.classList.add('hidden');
                 siteSelect.disabled = true;
             }
-            JFCustomWidget.requestFrameResize({height: document.body.offsetHeight});
-        });
+            resizeAndBroadcast();
+        }
 
-        // Site Change
-        siteSelect.addEventListener('change', function() {
-            const siteVal = this.value;
-            
-            if (siteVal === "Other") {
+        function handleSiteChange() {
+            if (siteSelect.value === "Other") {
                 siteInput.classList.remove('hidden');
             } else {
                 siteInput.classList.add('hidden');
             }
+            resizeAndBroadcast();
+        }
+
+        // --- 5. EVENT LISTENERS ---
+        // Trigger updates on Dropdown changes AND Text Input changes
+        stateSelect.addEventListener('change', handleStateChange);
+        districtSelect.addEventListener('change', handleDistrictChange);
+        siteSelect.addEventListener('change', handleSiteChange);
+
+        // Listen for typing in the "Other" boxes
+        stateInput.addEventListener('input', resizeAndBroadcast);
+        districtInput.addEventListener('input', resizeAndBroadcast);
+        siteInput.addEventListener('input', resizeAndBroadcast);
+
+
+        // --- 6. DATA TRANSMISSION ---
+
+        function calculateCurrentValue() {
+            var result = {};
+            
+            // Determine Final State
+            if (stateSelect.value === "Other") result.state = stateInput.value || "Not Provided";
+            else result.state = stateSelect.value;
+
+            // Determine Final District
+            if (stateSelect.value === "Other" || districtSelect.value === "Other") result.district = districtInput.value || "Not Provided";
+            else result.district = districtSelect.value;
+
+            // Determine Final Site
+            if (stateSelect.value === "Other" || districtSelect.value === "Other" || siteSelect.value === "Other") result.site = siteInput.value || "Not Provided";
+            else result.site = siteSelect.value;
+
+            return {
+                valid: !!(result.state && result.district && result.site),
+                value: "State: " + result.state + ", District: " + result.district + ", Site: " + result.site
+            };
+        }
+
+        function resizeAndBroadcast() {
             JFCustomWidget.requestFrameResize({height: document.body.offsetHeight});
+            
+            // THIS is the missing link. We send data to JotForm immediately on every change.
+            var data = calculateCurrentValue();
+            JFCustomWidget.sendData({ value: data.value });
+        }
+
+        JFCustomWidget.subscribe("submit", function() {
+            var data = calculateCurrentValue();
+            JFCustomWidget.sendSubmit(data);
         });
 
-        // --- 5. HELPER FUNCTIONS ---
+        // --- 7. HELPER FUNCTIONS ---
 
         function populateDistricts(state) {
-            // Clear existing except default
             districtSelect.innerHTML = '<option value="">Select District...</option>';
-            
             if (data[state]) {
                 Object.keys(data[state]).forEach(dist => {
                     let option = document.createElement('option');
@@ -236,7 +245,6 @@
                     option.text = dist;
                     districtSelect.add(option);
                 });
-                // Add Other
                 let other = document.createElement('option');
                 other.value = "Other";
                 other.text = "Other";
@@ -246,7 +254,6 @@
 
         function populateSites(state, district) {
             siteSelect.innerHTML = '<option value="">Select Site...</option>';
-            
             if (data[state] && data[state][district]) {
                 data[state][district].forEach(site => {
                     let option = document.createElement('option');
@@ -254,7 +261,6 @@
                     option.text = site;
                     siteSelect.add(option);
                 });
-                // Add Other
                 let other = document.createElement('option');
                 other.value = "Other";
                 other.text = "Other";
@@ -278,44 +284,6 @@
             siteInput.value = "";
         }
 
-        // --- 6. JOTFORM SUBMISSION LOGIC ---
-        
-        JFCustomWidget.subscribe("submit", function() {
-            var result = {};
-            
-            // 1. Determine Final State
-            if (stateSelect.value === "Other") {
-                result.state = stateInput.value || "Not Provided";
-            } else {
-                result.state = stateSelect.value;
-            }
-
-            // 2. Determine Final District
-            if (stateSelect.value === "Other" || districtSelect.value === "Other") {
-                result.district = districtInput.value || "Not Provided";
-            } else {
-                result.district = districtSelect.value;
-            }
-
-            // 3. Determine Final Site
-            if (stateSelect.value === "Other" || districtSelect.value === "Other" || siteSelect.value === "Other") {
-                result.site = siteInput.value || "Not Provided";
-            } else {
-                result.site = siteSelect.value;
-            }
-
-            // 4. Format for Output
-            // We create a readable string. This string is what appears in Google Sheets.
-            // Format: "State: AZ, District: Amphi, Site: Copper Creek"
-            var valid = !!(result.state && result.district && result.site);
-            var outputString = "State: " + result.state + ", District: " + result.district + ", Site: " + result.site;
-
-            // Send data to JotForm
-            JFCustomWidget.sendSubmit({
-                valid: valid,
-                value: outputString
-            });
-        });
     </script>
 </body>
 </html>
