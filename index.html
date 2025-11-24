@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cascading Location Widget</title>
+    <!-- JotForm Custom Widget Library -->
+    <!-- Changed to https to ensure loading in secure environments -->
+    <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
+    <style>
+        /* Basic Styling to match generic form looks */
+        body {
+            font-family: 'Verdana', sans-serif;
+            font-size: 14px;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        select, input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            font-size: 14px;
+            box-sizing: border-box; /* Ensures padding doesn't break width */
+        }
+
+        /* Utility class to hide elements */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="widget-container">
+        
+        <!-- STATE SECTION -->
+        <div class="form-group">
+            <label for="stateDropdown">State</label>
+            <select id="stateDropdown">
+                <option value="">Select State...</option>
+                <!-- Options populated by JS -->
+            </select>
+            <input type="text" id="stateInput" class="hidden" placeholder="Enter State">
+        </div>
+
+        <!-- DISTRICT SECTION -->
+        <div class="form-group" id="districtGroup">
+            <label for="districtDropdown">District</label>
+            <select id="districtDropdown" disabled>
+                <option value="">Select District...</option>
+            </select>
+            <input type="text" id="districtInput" class="hidden" placeholder="Enter District">
+        </div>
+
+        <!-- SITE SECTION -->
+        <div class="form-group" id="siteGroup">
+            <label for="siteDropdown">Site</label>
+            <select id="siteDropdown" disabled>
+                <option value="">Select Site...</option>
+            </select>
+            <input type="text" id="siteInput" class="hidden" placeholder="Enter Site">
+        </div>
+
+    </div>
+
+    <script type="text/javascript">
+        // --- MOCK JFCustomWidget FOR LOCAL TESTING ---
+        // This ensures the widget doesn't crash if the JotForm library fails to load 
+        // (e.g., in a local preview or restricted environment).
+        if (typeof JFCustomWidget === 'undefined') {
+            console.warn("JotForm library not loaded. Using mock object for testing.");
+            window.JFCustomWidget = {
+                subscribe: function(event, callback) {
+                    console.log(`Mock: Subscribed to '${event}'`);
+                    if (event === 'ready') setTimeout(callback, 100);
+                },
+                requestFrameResize: function(data) {
+                    console.log("Mock: requestFrameResize", data);
+                },
+                sendSubmit: function(data) {
+                    console.log("Mock: sendSubmit", data);
+                }
+            };
+        }
+
+        // --- 1. FAKE DATA CONFIGURATION ---
+        // Structure: State -> Districts -> Sites
+        const data = {
+            "Arizona": {
+                "Amphi": ["Copper Creek Elementary", "Canyon del Oro High", "Ironwood Ridge"],
+                "Tucson Unified": ["Tucson High", "Catalina High", "Rincon High"]
+            },
+            "California": {
+                "Los Angeles Unified": ["Hollywood High", "Venice High"],
+                "San Diego Unified": ["La Jolla High", "Madison High"]
+            }
+        };
+
+        // --- 2. DOM ELEMENTS ---
+        const stateSelect = document.getElementById('stateDropdown');
+        const districtSelect = document.getElementById('districtDropdown');
+        const siteSelect = document.getElementById('siteDropdown');
+
+        const stateInput = document.getElementById('stateInput');
+        const districtInput = document.getElementById('districtInput');
+        const siteInput = document.getElementById('siteInput');
+
+        // --- 3. INITIALIZATION ---
+        (function() {
+            // Populate States
+            Object.keys(data).forEach(state => {
+                let option = document.createElement('option');
+                option.value = state;
+                option.text = state;
+                stateSelect.add(option);
+            });
+            // Add "Other" to State
+            let otherOption = document.createElement('option');
+            otherOption.value = "Other";
+            otherOption.text = "Other";
+            stateSelect.add(otherOption);
+
+            // Notify JotForm widget is ready
+            // Now safe to call even if library didn't load (due to mock)
+            JFCustomWidget.subscribe("ready", function(){
+                JFCustomWidget.requestFrameResize({height: document.body.offsetHeight});
+            });
+        })();
+
+        // --- 4. EVENT LISTENERS ---
+
+        // State Change
+        stateSelect.addEventListener('change', function() {
+            const val = this.value;
+            resetDistrict();
+            resetSite();
+
+            if (val === "Other") {
+                // Show manual inputs for ALL
+                stateInput.classList.remove('hidden');
+                
+                // Hide dropdowns for child levels, show inputs
+                districtSelect.classList.add('hidden');
+                districtInput.classList.remove('hidden');
+                
+                siteSelect.classList.add('hidden');
+                siteInput.classList.remove('hidden');
+            } else if (val) {
+                // Specific State Selected
+                stateInput.classList.add('hidden');
+                
+                // Populate Districts
+                populateDistricts(val);
+                districtSelect.classList.remove('hidden'); // Ensure dropdown is visible
+                districtInput.classList.add('hidden');     // Ensure input is hidden
+                districtSelect.disabled = false;
+            } else {
+                // Nothing selected
+                stateInput.classList.add('hidden');
+                districtSelect.disabled = true;
+            }
+            JFCustomWidget.requestFrameResize({height: document.body.offsetHeight});
+        });
+
+        // District Change
+        districtSelect.addEventListener('change', function() {
+            const stateVal = stateSelect.value;
+            const distVal = this.value;
+            resetSite();
+
+            if (distVal === "Other") {
+                // Show manual inputs for District and Site
+                districtInput.classList.remove('hidden');
+                
+                siteSelect.classList.add('hidden');
+                siteInput.classList.remove('hidden');
+            } else if (distVal) {
+                // Specific District Selected
+                districtInput.classList.add('hidden');
+                
+                // Populate Sites
+                populateSites(stateVal, distVal);
+                siteSelect.classList.remove('hidden');
+                siteInput.classList.add('hidden');
+                siteSelect.disabled = false;
+            } else {
+                districtInput.classList.add('hidden');
+                siteSelect.disabled = true;
+            }
+            JFCustomWidget.requestFrameResize({height: document.body.offsetHeight});
+        });
+
+        // Site Change
+        siteSelect.addEventListener('change', function() {
+            const siteVal = this.value;
+            
+            if (siteVal === "Other") {
+                siteInput.classList.remove('hidden');
+            } else {
+                siteInput.classList.add('hidden');
+            }
+            JFCustomWidget.requestFrameResize({height: document.body.offsetHeight});
+        });
+
+        // --- 5. HELPER FUNCTIONS ---
+
+        function populateDistricts(state) {
+            // Clear existing except default
+            districtSelect.innerHTML = '<option value="">Select District...</option>';
+            
+            if (data[state]) {
+                Object.keys(data[state]).forEach(dist => {
+                    let option = document.createElement('option');
+                    option.value = dist;
+                    option.text = dist;
+                    districtSelect.add(option);
+                });
+                // Add Other
+                let other = document.createElement('option');
+                other.value = "Other";
+                other.text = "Other";
+                districtSelect.add(other);
+            }
+        }
+
+        function populateSites(state, district) {
+            siteSelect.innerHTML = '<option value="">Select Site...</option>';
+            
+            if (data[state] && data[state][district]) {
+                data[state][district].forEach(site => {
+                    let option = document.createElement('option');
+                    option.value = site;
+                    option.text = site;
+                    siteSelect.add(option);
+                });
+                // Add Other
+                let other = document.createElement('option');
+                other.value = "Other";
+                other.text = "Other";
+                siteSelect.add(other);
+            }
+        }
+
+        function resetDistrict() {
+            districtSelect.selectedIndex = 0;
+            districtSelect.disabled = true;
+            districtSelect.classList.remove('hidden');
+            districtInput.classList.add('hidden');
+            districtInput.value = "";
+        }
+
+        function resetSite() {
+            siteSelect.selectedIndex = 0;
+            siteSelect.disabled = true;
+            siteSelect.classList.remove('hidden');
+            siteInput.classList.add('hidden');
+            siteInput.value = "";
+        }
+
+        // --- 6. JOTFORM SUBMISSION LOGIC ---
+        
+        JFCustomWidget.subscribe("submit", function() {
+            var result = {};
+            
+            // 1. Determine Final State
+            if (stateSelect.value === "Other") {
+                result.state = stateInput.value || "Not Provided";
+            } else {
+                result.state = stateSelect.value;
+            }
+
+            // 2. Determine Final District
+            if (stateSelect.value === "Other" || districtSelect.value === "Other") {
+                result.district = districtInput.value || "Not Provided";
+            } else {
+                result.district = districtSelect.value;
+            }
+
+            // 3. Determine Final Site
+            if (stateSelect.value === "Other" || districtSelect.value === "Other" || siteSelect.value === "Other") {
+                result.site = siteInput.value || "Not Provided";
+            } else {
+                result.site = siteSelect.value;
+            }
+
+            // 4. Format for Output
+            // We create a readable string. This string is what appears in Google Sheets.
+            // Format: "State: AZ, District: Amphi, Site: Copper Creek"
+            var valid = !!(result.state && result.district && result.site);
+            var outputString = "State: " + result.state + ", District: " + result.district + ", Site: " + result.site;
+
+            // Send data to JotForm
+            JFCustomWidget.sendSubmit({
+                valid: valid,
+                value: outputString
+            });
+        });
+    </script>
+</body>
+</html>
