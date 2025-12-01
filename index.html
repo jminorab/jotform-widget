@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cascading Location Widget</title>
     <!-- JotForm Custom Widget Library -->
-    <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
+    <script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
     <style>
         body {
             font-family: 'Verdana', sans-serif;
@@ -18,7 +18,7 @@
         .container {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 15px;
             width: 100%;
         }
 
@@ -40,10 +40,23 @@
             width: 100%;
             font-size: 14px;
             box-sizing: border-box;
+            background-color: #fff;
+        }
+        
+        select:disabled {
+            background-color: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
         }
 
         .hidden {
             display: none !important;
+        }
+        
+        /* Animation for smooth appearance of Other inputs */
+        input[type="text"] {
+            margin-top: 5px;
+            transition: all 0.3s ease;
         }
     </style>
 </head>
@@ -53,198 +66,711 @@
         
         <!-- STATE SECTION -->
         <div class="form-group">
-            <label for="stateDropdown">State</label>
-            <select id="stateDropdown">
+            <label for="stateSelect">State</label>
+            <select id="stateSelect">
                 <option value="">Select State...</option>
             </select>
-            <input type="text" id="stateInput" class="hidden" placeholder="Enter State">
         </div>
 
         <!-- DISTRICT SECTION -->
-        <div class="form-group" id="districtGroup">
-            <label for="districtDropdown">District</label>
-            <select id="districtDropdown" disabled>
+        <div class="form-group">
+            <label for="districtSelect">District</label>
+            <select id="districtSelect" disabled>
                 <option value="">Select District...</option>
             </select>
-            <input type="text" id="districtInput" class="hidden" placeholder="Enter District">
+            <input type="text" id="districtInput" class="hidden" placeholder="Enter District Name">
         </div>
 
         <!-- SITE SECTION -->
-        <div class="form-group" id="siteGroup">
-            <label for="siteDropdown">Site</label>
-            <select id="siteDropdown" disabled>
+        <div class="form-group">
+            <label for="siteSelect">Site</label>
+            <select id="siteSelect" disabled>
                 <option value="">Select Site...</option>
             </select>
-            <input type="text" id="siteInput" class="hidden" placeholder="Enter Site">
+            <input type="text" id="siteInput" class="hidden" placeholder="Enter Site Name">
         </div>
 
     </div>
 
-    <script type="text/javascript">
-        // --- MOCK FOR TESTING ---
-        if (typeof JFCustomWidget === 'undefined') {
-            window.JFCustomWidget = {
-                subscribe: function(e, c) { if(e==='ready') setTimeout(c, 100); },
-                requestFrameResize: function() {},
-                sendSubmit: function(d) { console.log("Submit:", d); },
-                sendData: function(d) { console.log("Data Sent:", d); }
-            };
+    <script>
+        // --- DATA SECTION ---
+        // This variable contains the raw CSV data from your Google Sheet.
+        const csvRaw = `site,state,district
+Academy For Academics & Arts,AL,Huntsville
+Academy For Science & Foreign Language,AL,Huntsville
+Blossomwood Elementary School,AL,Huntsville
+Challenger Elementary School,AL,Huntsville
+Farley Elementary School,AL,Huntsville
+Goldsmith Schiffman Elementary PK-5,AL,Huntsville
+Hampton Cove Elementary School,AL,Huntsville
+Jones Valley Elementary School,AL,Huntsville
+Louis J Morris School,AL,Huntsville
+Monte Sano Elementary School,AL,Huntsville
+Mountain Gap Elementary School,AL,Huntsville
+Providence School,AL,Huntsville
+Roger B Chaffee Elementary School,AL,Huntsville
+Rolling Hills Elementary School,AL,Huntsville
+Weatherly Elementary School,AL,Huntsville
+Whitesburg P8,AL,Huntsville
+Copper Creek Elementary School,AZ,Amphitheater
+F. O. Holaway Elementary School,AZ,Amphitheater
+Innovation Academy,AZ,Amphitheater
+Lulu Walker Elementary School,AZ,Amphitheater
+Marion Donaldson Elementary School,AZ,Amphitheater
+Mesa Verde Elementary School,AZ,Amphitheater
+Painted Sky Elementary School,AZ,Amphitheater
+Richard B. Wilson K-8 School,AZ,Amphitheater
+Rio Vista Elementary School,AZ,Amphitheater
+Winifred Harelson Elementary School,AZ,Amphitheater
+Fremont Elementary,CA,Alhambra
+Granada Elementary,CA,Alhambra
+Marguerita Elementary,CA,Alhambra
+Repetto Elementary,CA,Alhambra
+Carl E. Gilbert Elementary School,CA,Buena Park
+Mabel L. Pendleton Elementary School,CA,Buena Park
+Anna Kyle Elementary School,CA,Fairfield-Suisun
+Cordelia Hills Elementary School,CA,Fairfield-Suisun
+David Weir Academy,CA,Fairfield-Suisun
+Dover Elementary,CA,Fairfield-Suisun
+Fairview Elementary School,CA,Fairfield-Suisun
+Nelda Mundy Elementary School,CA,Fairfield-Suisun
+Suisun Valley School,CA,Fairfield-Suisun
+Sullivan Language Immersion Academy,CA,Fairfield-Suisun
+Tolenas Academy of Music and Media,CA,Fairfield-Suisun
+Callie Kirkpatrick Elementary School,CA,Menifee
+Chester W Morrison Elementary School,CA,Menifee
+Evans Ranch Elementary School,CA,Menifee
+Freedom Crest Elementary School,CA,Menifee
+Harvest Hill STEAM Academy,CA,Menifee
+Herk Bouris Elementary School,CA,Menifee
+Oak Meadows Elementary School,CA,Menifee
+Quail Valley Elementary School,CA,Menifee
+Ridgemoor Elementary School,CA,Menifee
+Sally Buselt Elementary School,CA,Menifee
+Southshore Elementary School,CA,Menifee
+Taawila Elementary School,CA,Menifee
+Woodland Elementary School,CA,Newport Mesa
+Brekke Elementary School,CA,Oxnard
+Harrington Elementary School,CA,Oxnard
+McKinna Elementary School,CA,Oxnard
+Ramona Elementary School,CA,Oxnard
+Rose Avenue Elementary School,CA,Oxnard
+Sierra Linda Elementary School,CA,Oxnard
+Corte Madera,CA,Portola Valley
+Hidden Hills Elementary,CA,San Ramon
+D.W. Babcock Elementary School,CA,Twin Rivers
+Hagginwood Elementary School,CA,Twin Rivers
+Northwood Elementary School,CA,Twin Rivers
+Regency Park Elementary School,CA,Twin Rivers
+Woodlake Elementary School,CA,Twin Rivers
+AXIS International Academy,CO,Axis
+AXL Academy,CO,AXL Academy
+Vista Ridge Academy,CO,Weld : STARS
+Crown Pointe Academy,CO,Crown Pointe Academy
+Lawrence Elementary,CO,Jefferson : STARS
+Monarch Montessori,CO,Monarch Montessori
+Bacon Elementary School,CO,Poudre
+Bamford Elementary School,CO,Poudre
+Bauder Elementary School,CO,Poudre
+Beattie Elementary School,CO,Poudre
+Bennett Elementary School,CO,Poudre
+Bethke Elementary School,CO,Poudre
+Cache La Poudre Elementary School,CO,Poudre
+Dunn IB World School,CO,Poudre
+Eyestone Elementary School,CO,Poudre
+Harris Elementary School,CO,Poudre
+Irish Elementary Escuela Bilingual,CO,Poudre
+Johnson Elementary School,CO,Poudre
+Kruse Elementary School,CO,Poudre
+Laurel Elementary School,CO,Poudre
+Linton Elementary School,CO,Poudre
+Livermore Elementary School,CO,Poudre
+Lopez Elementary School,CO,Poudre
+McGraw Elementary School,CO,Poudre
+O'Dea Elementary School,CO,Poudre
+Olander Elementary School,CO,Poudre
+Polaris Expeditionary Learning School,CO,Poudre
+Putnam Elementary,CO,Poudre
+Red Feather,CO,Poudre
+Rice Elementary School,CO,Poudre
+Riffenburgh Elementary School,CO,Poudre
+Shepardson Elementary School,CO,Poudre
+Stove Prairie Elementary School,CO,Poudre
+Tavelli Elementary School,CO,Poudre
+Timnath Elementary School,CO,Poudre
+Traut Elementary School,CO,Poudre
+Werner Elementary School,CO,Poudre
+Zach Elementary School,CO,Poudre
+Resurrection Christian School,CO,Resurrection
+Roosevelt Charter Academy,CO,El Paso : STARS
+Secrest Elementary,CO,Jeffco
+Swanson Elementary,CO,Jefferson : STARS
+Lower Elementary,CO,El Paso : STARS
+Upper Elementary,CO,El Paso : STARS
+Grandview Elementary,CO,Weld
+Hollister Lake Elementary,CO,Weld
+Orchard Hill Elementary,CO,Weld
+Range View Elementary,CO,Weld
+Skyview School of STEM,CO,Weld
+Tozer Primary School,CO,Weld
+Braeside Elementary School,IL,North Shore
+Indian Trail Elementary School,IL,North Shore
+Oak Terrace Elementary School,IL,North Shore
+Ravinia Elementary School,IL,North Shore
+Red Oak Elementary School,IL,North Shore
+Sherwood Elementary School,IL,North Shore
+Wayne Thomas Elementary School,IL,North Shore
+Beechgrove Elementary School,KY,Kenton
+J A Caywood Elementary School,KY,Kenton
+Kenton Elementary,KY,Kenton
+R.C. Hinsdale Elementary School,KY,Kenton
+River Ridge Elementary School,KY,Kenton
+Summit View Academy,KY,Kenton
+Taylor Mill Elementary School,KY,Kenton
+White's Tower Elementary School,KY,Kenton
+Saint Paul Catholic School,KY,St. Paul Catholic School
+Dennis Intermediate School,MA,Dennis-Yarmouth
+Ezra H Baker Innovation School,MA,Dennis-Yarmouth
+Marguerite E Small Elementary,MA,Dennis-Yarmouth
+Station Avenue Elementary,MA,Dennis-Yarmouth
+Hildreth Elementary School,MA,Harvard
+Northbridge Elementary School,MA,Northbridge
+Abraham Lincoln,MA,Revere
+Beachmont Veterans Memorial School,MA,Revere
+Garfield Elementary School,MA,Revere
+Hill School,MA,Revere
+Paul Revere Elementary School,MA,Revere
+Whelan School,MA,Revere
+East Brookfield Elementary,MA,Spencer-East Brookfield
+Wire Village School,MA,Spencer-East Brookfield
+Chace Street Elementary School,MA,Somerset
+North Elementary School,MA,Somerset
+South Elementary School,MA,Somerset
+Center School,MA,Tewksbury
+Heath Brook Elementary School,MA,Tewksbury
+Loella F. Dewing Elementary School,MA,Tewksbury
+Tyngsborough Elementary School,MA,Tyngsborough
+Arthur Middleton Elementary,MD,Charles County
+Berry Elementary School,MD,Charles County
+Billingsley Elementary School,MD,Charles County
+C. Paul Barnhart Elementary School,MD,Charles County
+Daniel of Saint Thomas Jenifer Elementary School,MD,Charles County
+Dr. Gustavus Brown Elementary School,MD,Charles County
+Dr. James Craik Elementary School,MD,Charles County
+Dr. Samuel A. Mudd Elementary School,MD,Charles County
+Dr. Thomas L. Higdon Elementary School,MD,Charles County
+Eva Turner Elementary,MD,Charles County
+Gale-Bailey Elementary School,MD,Charles County
+Indian Head Elementary School,MD,Charles County
+J C Parks Elementary School,MD,Charles County
+J.P. Ryon Elementary School,MD,Charles County
+Malcolm Elementary School,MD,Charles County
+Margaret Jameson Thornton,MD,Charles County
+Mary B Neal Elementary School,MD,Charles County
+Mary H. Matula Elementary School,MD,Charles County
+Mt Hope Nanjemoy Elementary,MD,Charles County
+Port Tobacco,MD,Charles County
+T.C. Martin Elementary School,MD,Charles County
+The Early Learning Center,MD,Charles County
+The Early Learning Center of Waldorf,MD,Charles County
+Walter J Mitchell Elementary,MD,Charles County
+William A. Diggs Elementary School,MD,Charles County
+William B. Wade Elementary School,MD,Charles County
+Accokeek Academy,MD,Prince George County
+Allenwood Elementary School,MD,Prince George County
+Andrew Jackson Academy,MD,Prince George County
+Apple Grove Elementary School,MD,Prince George County
+Ardmore Elementary School,MD,Prince George County
+Arrowhead Elementary School,MD,Prince George County
+Avalon Elementary School,MD,Prince George County
+Barack Obama Elementary School,MD,Prince George County
+Benjamin Foulois Creative and Performing Arts K-8 School,MD,Prince George County
+Brandywine Elementary School,MD,Prince George County
+Capitol Heights Elementary School,MD,Prince George County
+Carmody Hills Elementary School,MD,Prince George County
+Clinton Grove Elementary School,MD,Prince George County
+Colin Powell Elementary School,MD,Prince George County
+Cora L. Rice Elementary School,MD,Prince George County
+Doswell E. Brooks Elementary,MD,Prince George County
+Francis Scott Key Elementary School,MD,Prince George County
+Gladys Noon Spellman Elementary School,MD,Prince George County
+Glenarden Woods Elementary School,MD,Prince George County
+Heather Hills Elementary School,MD,Prince George County
+Highland Park Elementary,MD,Prince George County
+Hillcrest Heights Elementary School,MD,Prince George County
+John Hanson Montessori School,MD,Prince George County
+John H. Bayne Elementary School,MD,Prince George County
+Judith P. Hoyer Montessori,MD,Prince George County
+Kettering Elementary School,MD,Prince George County
+Kingsford Elementary School,MD,Prince George County
+Lake Arbor Elementary School,MD,Prince George County
+Longfields Elementary,MD,Prince George County
+Maya Angelou French Immersion School,MD,Prince George County
+Meadowbrook Elementary,MD,Prince George County
+Melwood Elementary School,MD,Prince George County
+Overlook Full Spanish Immersion School,MD,Prince George County
+Panorama Elementary School,MD,Prince George County
+Patuxent Elementary School,MD,Prince George County
+Perrywood Elementary School,MD,Prince George County
+Robert R. Gray Elementary School,MD,Prince George County
+Rosaryville Elementary School,MD,Prince George County
+Suitland Elementary School,MD,Prince George County
+University Park Elementary School,MD,Prince George County
+Waldon Woods Elementary School,MD,Prince George County
+Centreville Elementary School,MD,Queen Anne
+Grasonville Elementary,MD,Queen Anne
+Kent Island Elementary School,MD,Queen Anne
+Matapeake Elementary School,MD,Queen Anne
+Saint Marys,MD,St. Mary’s Catholic Church
+Bel-Aire Elementary School,MS,Harrison
+Creekbend Elementary,MS,Harrison
+Crossroads Elementary School,MS,Harrison
+Harrison Central Elementary School,MS,Harrison
+Lizana Elementary School,MS,Harrison
+Lyman Elementary School,MS,Harrison
+North Woolmarket Elementary School,MS,Harrison
+Orange Grove Elementary School,MS,Harrison
+River Oaks Elementary School,MS,Harrison
+Three Rivers Elementary School,MS,Harrison
+West Wortham Elementary & Middle School,MS,Harrison
+Woolmarket Elementary School,MS,Harrison
+Berlin Community School,NJ,Berlin Borough
+E Roy Bixby Elementary School,NJ,Bogota
+Lillian M. Steen Elementary School,NJ,Bogota
+Cedar Grove Memorial Middle School,NJ,Cedar Grove
+North End School,NJ,Cedar Grove
+South End School,NJ,Cedar Grove
+The Cranbury School,NJ,Cranbury
+County Road School,NJ,Demarest
+Luther Lee Emerson School,NJ,Demarest
+Franklin Township Elementary School,NJ,Franklin Township
+Central School,NJ,Glen Ridge
+Forest Avenue School,NJ,Glen Ridge
+Linden Avenue School,NJ,Glen Ridge
+Ridgewood Avenue Elementary School,NJ,Glen Ridge
+Cold Springs School,NJ,Gloucester City
+Central Elementary School,NJ,Haddonfield
+Elizabeth Haddon Elementary School,NJ,Haddonfield
+J Fithian Tatem Elementary,NJ,Haddonfield
+Durban Avenue Elementary School,NJ,Hopatcong
+Hopatcong Middle School,NJ,Hopatcong
+Tulsa Trail Elementary School,NJ,Hopatcong
+Clifton Avenue Grade School,NJ,Lakewood
+Oak Street School,NJ,Lakewood
+Gillette Elementary School,NJ,Long Hill Township
+Millington Elementary School,NJ,Long Hill Township
+Columbus Elementary School,NJ,Lyndhurst
+Franklin School,NJ,Lyndhurst
+Jefferson School,NJ,Lyndhurst
+Roosevelt School,NJ,Lyndhurst
+Washington School,NJ,Lyndhurst
+Deerfield Elementary School,NJ,Millburn ED
+Hartshorn Elementary School,NJ,Millburn ED
+South Mountain Elementary School,NJ,Millburn ED
+Wyoming School,NJ,Millburn ED
+Mount Arlington Public School,NJ,Mt. Arlington
+Glen School,NJ,Ridgewood
+Hawes Elementary School,NJ,Ridgewood
+Orchard School,NJ,Ridgewood
+Ridge Elementary School,NJ,Ridgewood
+Somerville Elementary School,NJ,Ridgewood
+Travell Elementary School,NJ,Ridgewood
+Willard Elementary School,NJ,Ridgewood
+Cherry Hill Elementary School,NJ,River Edge
+Roosevelt Elementary School,NJ,River Edge
+Franklin Elementary School,NJ,Saddle Brook
+Helen I Smith Elementary School,NJ,Saddle Brook
+Long Memorial Elementary School,NJ,Saddle Brook
+Washington School,NJ,Saddle Brook
+Alpine Elementary School,NJ,Sparta
+Helen Morgan Elementary School,NJ,Sparta
+Mohawk Avenue School,NJ,Sparta
+Valley Road School,NJ,Stanhope
+Newell Elementary School,NJ,Upper Freehold
+Angelo L. Tomaso Elementary School,NJ,Warren
+Central Elementary School,NJ,Warren
+Mount Horeb Elementary School,NJ,Warren
+Woodland School,NJ,Warren
+Brass Castle Elementary,NJ,Washington Township
+Port Colden Elementary,NJ,Washington Township
+Adams Elementary School,OK,Norman
+Alcott Middle School,OK,Norman
+Cleveland Elementary School,OK,Norman
+Eisenhower Elementary School,OK,Norman
+Jackson Elementary School,OK,Norman
+Jefferson Elementary School,OK,Norman
+Kennedy Elementary School,OK,Norman
+Lakeview Elementary School,OK,Norman
+Lincoln Elementary School,OK,Norman
+Longfellow Middle School,OK,Norman
+Madison Elementary School,OK,Norman
+McKinley Elementary School,OK,Norman
+Monroe Elementary,OK,Norman
+Ronald Reagan Elementary School,OK,Norman
+Roosevelt Elementary School,OK,Norman
+Truman Elementary School,OK,Norman
+Truman Primary,OK,Norman
+Washington Elementary,OK,Norman
+Whittier Middle School,OK,Norman
+Wilson Elementary School,OK,Norman
+Cherry Park Elementary,OR,David Douglas
+Earl Boyles Elementary,OR,David Douglas
+Gilbert Heights Elementary,OR,David Douglas
+Gilbert Park Elementary,OR,David Douglas
+Menlo Park Elementary,OR,David Douglas
+Ventura Park Elementary,OR,David Douglas
+Forest Hills Lutheran Christian School,OR,Forest Hills
+Brookwood Elementary School,OR,Hillsboro
+Farmington View Elementary School,OR,Hillsboro
+Ashton Elementary School,RI,Cumberland
+Bernard F. Norton School,RI,Cumberland
+Community School,RI,Cumberland
+Garvin Memorial School,RI,Cumberland
+J.J. McLaughlin Cumberland Hill Elementary School,RI,Cumberland
+Howard W Hathaway Elementary,RI,PortsmouthRI
+Melville Elementary School,RI,PortsmouthRI
+Cedar Hill Elementary,RI,Warwick
+Holliman Elementary,RI,Warwick
+Lippitt Elementary,RI,Warwick
+Robertson Elementary,RI,Warwick
+Scott Elementary,RI,Warwick
+Sherman Elementary School,RI,Warwick
+Warwick Neck Elementary,RI,Warwick
+Gilbert Elementary School,SC,Lexington
+Lake Murray Elementary School,SC,Lexington
+Meadow Glen Elementary School,SC,Lexington
+Midway Elementary School,SC,Lexington
+Pleasant Hill Elementary School,SC,Lexington
+Rocky Creek Elementary School,SC,Lexington
+White Knoll Elementary,SC,Lexington
+Hopkins Elementary,SC,Richland County
+HL Brockett Elementary School,TX,Aubrey
+Jackie Fuller Elementary School,TX,Aubrey
+Monaco Elementary School,TX,Aubrey
+Pete and Myra West Elementary School,TX,Aubrey
+Blue Ridge Elementary School,TX,Blue Ridge
+Bonham Elementary,TX,Bryan
+Bowen Elementary School,TX,Bryan
+Branch Elementary School,TX,Bryan
+Crockett Elementary School,TX,Bryan
+Fannin Elementary School,TX,Bryan
+Henderson Elementary School,TX,Bryan
+Houston Elementary School,TX,Bryan
+Jane Long Intermediate School,TX,Bryan
+Johnson Elementary,TX,Bryan
+Kemp Elementary School,TX,Bryan
+Mitchell Elementary School,TX,Bryan
+Navarro Elementary School,TX,Bryan
+Ross Elementary School,TX,Bryan
+Sadberry Intermediate,TX,Bryan
+Sam Rayburn Intermediate School,TX,Bryan
+Griffis Elementary,TX,Caddo Mills
+Kirkpatrick Elementary,TX,Caddo Mills
+Lee Elementary,TX,Caddo Mills
+Bothwell Elementary,TX,Celina
+Celina Primary School,TX,Celina
+Donny O'Dell Elementary School,TX,Celina
+Lykins Elementary School,TX,Celina
+Margie Moore Vasquez Elementary School,TX,Celina
+Martin Elementary School,TX,Celina
+Buckner Preparatory,TX,Cityscape
+Early Childhood Center,TX,Cityscape
+East Grand Preparatory,TX,Cityscape
+Barbara Walker Elementary School,TX,Crandall
+Hollis T. Dietz Elementary School,TX,Crandall
+Noble-Reed Elementary School,TX,Crandall
+Nola Kathryn Wilson Elementary School,TX,Crandall
+Smith Elementary School,TX,Crandall
+Farmersville Intermediate School,TX,Farmersville
+Tatum Elementary,TX,Farmersville
+Bert & Eloise Isbell Elementary School,TX,Frisco
+Bessie Gunstream Elementary School,TX,Frisco
+Billy Gene Phillips Elementary School,TX,Frisco
+Bright Academy,TX,Frisco
+Calvin Bledsoe Elementary School,TX,Frisco
+Charlie and Charlotte Mooneyham Elementary School,TX,Frisco
+Claude Curtsinger Elementary School,TX,Frisco
+Coy Miller Elementary school,TX,Frisco
+Doctor Erwin G and Elisabeth Pink Elementary School,TX,Frisco
+Frisco ISD Early Childhood School,TX,Frisco
+Gene and Ruby Nichols Elementary School,TX,Frisco
+George and Debra Purefoy Elementary School,TX,Frisco
+Isabel Pierce Sem Elementary School,TX,Frisco
+I. S. Rogers Elementary School,TX,Frisco
+Izetta Sparks Elementary School,TX,Frisco
+James R. Newman Elementary School,TX,Frisco
+Jessie Marie Riddle Elementary School,TX,Frisco
+Jimmy and Sammy Lane Vaughn Elementary School,TX,Frisco
+Kenneth Rex Talley Elementary School,TX,Frisco
+Liscano Elementary School,TX,Frisco
+Naoma and M. Allen Anderson Elementary School,TX,Frisco
+Noel A. Smith Elementary School,TX,Frisco
+Otis Spears Elementary School,TX,Frisco
+Pete and Gracie Hosp Elementary School,TX,Frisco
+Polly Tadlock Elementary School,TX,Frisco
+Portia Ross Taylor Elementary School,TX,Frisco
+Ruth Borchardt Elementary School,TX,Frisco
+Sonntag Elementary,TX,Frisco
+Sonny & Joanne McSpedden Elementary School,TX,Frisco
+Weldon Corbell Elementary School,TX,Frisco
+William and Abbie Allen Elementary School,TX,Frisco
+Wortham Intermediate School,TX,Frisco
+Gunter Elementary School,TX,Gunter ISD
+Blanche Dodd Elementary School,TX,Krum
+Hansel Elementary,TX,Krum
+Hattie Dyer Elementary School,TX,Krum
+Corinth Elementary School,TX,Lake Dallas
+Lake Dallas Elementary School,TX,Lake Dallas
+Shady Shores Elementary School,TX,Lake Dallas
+Cesar E. Chavez Elementary,TX,Little Elm
+D.H. Brent Elementary School,TX,Little Elm
+Hackberry Elementary School,TX,Little Elm
+Lakeview Elementary School,TX,Little Elm
+Lakewood Village,TX,Little Elm
+Oak Point Elementary,TX,Little Elm
+Prestwick Elementary School,TX,Little Elm
+Zellars Early Childhood Learning Center,TX,Little Elm
+Lovejoy Child Development Center,TX,Lovejoy
+East Campus,TX,North Texas Collegiate Academy
+North Campus,TX,North Texas Collegiate Academy
+South Campus,TX,North Texas Collegiate Academy
+Alan & Andra Perrin Elementary,TX,Northwest
+Berkshire Elementary,TX,Northwest
+Carl E. Schluter Elementary School,TX,Northwest
+Carter Elementary School,TX,Northwest
+Clara Love Elementary School,TX,Northwest
+Cox Elementary,TX,Northwest
+Daniel Elementary School,TX,Northwest
+Haslet Elementary School,TX,Northwest
+JC Thompson Elementary School,TX,Northwest
+J Lyndall Hughes Elementary,TX,Northwest
+Justin Elementary School,TX,Northwest
+Kay Granger Elementary School,TX,Northwest
+Lakeview Elementary School,TX,Northwest
+Lance Thompson Elementary School NWISD,TX,Northwest
+Lizzie Curtis Elementary,TX,Northwest
+O A Peterson Elementary,TX,Northwest
+Prairie View Elementary School,TX,Northwest
+Roanoke Elementary School,TX,Northwest
+Samuel Beck Elementary School,TX,Northwest
+Sendera Ranch Elementary School,TX,Northwest
+Seven Hills Elementary School,TX,Northwest
+Sonny & Allegra Nance Elementary,TX,Northwest
+W R Hatfield Elementary School,TX,Northwest
+Ponder Elementary,TX,Ponder
+Betty Jackson Elementary,TX,Prosper
+Brenda Calhoun Early Childhood School,TX,Prosper
+Cynthia A. Cockrell Elementary School,TX,Prosper
+Dan Christie Elementary,TX,Prosper
+Jack and June Furr Elementary School,TX,Prosper
+Jana Thomson Elementary School,TX,Prosper
+Jim and Betty Hughes Elementary School,TX,Prosper
+Jim Spradley Elementary School,TX,Prosper
+John A. Baker Elementary School,TX,Prosper
+Joyce Hall Elementary,TX,Prosper
+Judy A. Rucker Elementary School,TX,Prosper
+Light Farms Elementary,TX,Prosper
+Lilyana Elementary School,TX,Prosper
+Mike and Janie Reeves Elementary,TX,Prosper
+Mrs. Jerry Bryant Elementary,TX,Prosper
+Ralph and Mary Lynn Boyer Elementary,TX,Prosper
+R. Steve Folsom Elementary School,TX,Prosper
+Sam Johnson Elementary School,TX,Prosper
+Smothermon Elementary School,TX,Prosper
+Stuber Elementary,TX,Prosper
+Windsong Ranch Elementary,TX,Prosper
+Butterfield Elementary,TX,Sanger
+Chisholm Trail Elementary,TX,Sanger
+Clear Creek Intermediate,TX,Sanger
+Sunnyvale Intermediate School,TX,Sunnyvale
+Cheri Cox Elementary School,TX,Wylie
+Davis Intermediate School,TX,Wylie
+Dodd Elementary School,TX,Wylie
+Dr. Al Draper Intermediate School,TX,Wylie
+George W. Bush Elementary,TX,Wylie
+Harrison Intermediate School,TX,Wylie
+Kreymer Elementary,TX,Wylie
+P.M. Akin Elementary School,TX,Wylie
+R. F. Hartman Elementary School,TX,Wylie
+Rita Smith Elementary School,TX,Wylie
+R. V. Groves Elementary School,TX,Wylie
+T.F. Birmingham Elementary School,TX,Wylie
+Tibbals Elementary School,TX,Wylie
+Watkins Elementary School,TX,Wylie
+Whitt Elementary School,TX,Wylie
+Baldwin Elementary School,VA,Manassas
+George C Round Elementary School,VA,Manassas
+Weems Elementary School,VA,Manassas
+Churchland Academy,VA,Portsmouth
+Churchland Elementary School,VA,Portsmouth
+Churchland Primary & Intermediate,VA,Portsmouth
+Hodges Manor Elementary School,VA,Portsmouth
+Lakeview Elementary School,VA,Portsmouth
+Park View Elementary School,VA,Portsmouth
+Simonsdale Elementary School,VA,Portsmouth
+Victory Elementary School,VA,Portsmouth
+Alexander Henderson Elementary,VA,Prince William
+Alvey Elementary School,VA,Prince William
+Antietam Elementary School,VA,Prince William
+Ashland Elementary School,VA,Prince William
+Bel Air Elementary School,VA,Prince William
+Belmont Elementary School,VA,Prince William
+Bennett Elementary School,VA,Prince William
+Bristow Run Elementary School,VA,Prince William
+Buckland Mills Elementary,VA,Prince William
+Cedar Point Elementary School,VA,Prince William
+Christa Mc Auliffe Elementary,VA,Prince William
+Chris Yung Elementary School,VA,Prince William
+Coles Elementary School,VA,Prince William
+Covington-Harper Elementary School,VA,Prince William
+Dale City Elementary School,VA,Prince William
+Dumfries Elementary School,VA,Prince William
+Elizabeth Vaughan Elementary School,VA,Prince William
+Ellis Elementary School,VA,Prince William
+Enterprise Elementary School,VA,Prince William
+Fannie W Fitzgerald Elementary,VA,Prince William
+Featherstone Elementary School,VA,Prince William
+George G Tyler Elementary School,VA,Prince William
+Glenkirk Elementary School,VA,Prince William
+Gravely Elementary School,VA,Prince William
+Haymarket Elementary School,VA,Prince William
+Innovation Elementary,VA,Prince William
+Jenkins Elementary School,VA,Prince William
+John F Pattie Elementary,VA,Prince William
+Kerrydale Elementary School,VA,Prince William
+Kyle R Wilson Elementary School,VA,Prince William
+Lake Ridge Elementary School,VA,Prince William
+Leesylvania Elementary School,VA,Prince William
+Marshall Elementary School,VA,Prince William
+Martin Luther King Jr. Elementary School,VA,Prince William
+Marumsco Hills Elementary School,VA,Prince William
+Mary G. Porter Traditional School,VA,Prince William
+Minnieville Elementary School,VA,Prince William
+Montclair Elementary School,VA,Prince William
+Mountain View Elementary School,VA,Prince William
+Mullen Elementary School,VA,Prince William
+Neabsco Elementary School,VA,Prince William
+Occoquan Elementary School,VA,Prince William
+Old Bridge Elementary School,VA,Prince William
+Penn Elementary School,VA,Prince William
+Pennington Traditional School,VA,Prince William
+Piney Branch Elementary School,VA,Prince William
+Potomac View Elementary School,VA,Prince William
+R Dean Kilby Elementary School,VA,Prince William
+River Oaks Elementary School,VA,Prince William
+Rockledge Elementary School,VA,Prince William
+Rosa Parks Elementary School,VA,Prince William
+Signal Hill Elementary School,VA,Prince William
+Sinclair Elementary School,VA,Prince William
+Springwoods Elementary School,VA,Prince William
+Sudley Elementary School,VA,Prince William
+Swans Creek Elementary School,VA,Prince William
+T. Clay Wood Elementary School,VA,Prince William
+The Nokesville School,VA,Prince William
+Triangle Elementary School,VA,Prince William
+Victory Elementary School,VA,Prince William
+Westridge Elementary School,VA,Prince William
+Williams Elementary School,VA,Prince William
+Yorkshire Elementary School,VA,Prince William
+Creekside Elementary School,VA,Suffolk
+Elephants Fork Elementary School,VA,Suffolk
+Florence Bowser Elementary School,VA,Suffolk
+Hillpoint Elementary School,VA,Suffolk
+Kilby Shores Elementary School,VA,Suffolk
+Mack Benn, Jr. Elementary School,VA,Suffolk
+Nansemond Parkway Elementary School,VA,Suffolk
+Northern Shores Elementary School,VA,Suffolk
+Southwestern Elementary School,VA,Suffolk
+Eastern Panhandle Preparatory Academy,WV,Jefferson
+Blue Ridge Elementary School,WV,Jefferson
+C.W. Shipley Elementary School,WV,Jefferson
+Driswood Elementary School,WV,Jefferson
+Page Jackson Elementary School,WV,Jefferson
+Shepherdstown Elementary School,WV,Jefferson
+South Jefferson School,WV,Jefferson
+T. A. Lowery Elementary School,WV,Jefferson
+Wright Denny Intermediate School,WV,Jefferson`;
+
+        // --- 2. DATA PROCESSING LOGIC ---
+        let data = {};
+
+        // Function to parse CSV respecting quotes (e.g., "Mack Benn, Jr. Elementary School")
+        function processData(csvText) {
+            const lines = csvText.trim().split('\n');
+            const result = {};
+            
+            // Start at 1 to skip header if first line contains "site"
+            let startIndex = lines[0].toLowerCase().includes('site') ? 1 : 0;
+
+            for (let i = startIndex; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                // Regex to split by comma but ignore commas inside quotes
+                const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                
+                // We expect 3 parts: Site, State, District
+                if (parts && parts.length >= 3) {
+                    // Clean quotes and extra spaces
+                    // The order is Site (0), State (1), District (2) based on your CSV structure
+                    const site = parts[0].replace(/^"|"$/g, '').trim(); 
+                    const state = parts[1].replace(/^"|"$/g, '').trim();
+                    const district = parts[2].replace(/^"|"$/g, '').trim();
+
+                    if (!result[state]) result[state] = {};
+                    if (!result[state][district]) result[state][district] = [];
+                    
+                    result[state][district].push(site);
+                }
+            }
+            
+            // Sort keys alphabetically for better UX
+            const sortedResult = {};
+            Object.keys(result).sort().forEach(state => {
+                sortedResult[state] = {};
+                Object.keys(result[state]).sort().forEach(district => {
+                    sortedResult[state][district] = result[state][district].sort();
+                });
+            });
+
+            return sortedResult;
         }
 
-        // --- 1. DATA CONFIGURATION ---
-        const data = {
-            "Arizona": {
-                "Amphi": ["Copper Creek Elementary", "Canyon del Oro High", "Ironwood Ridge"],
-                "Tucson Unified": ["Tucson High", "Catalina High", "Rincon High"]
-            },
-            "California": {
-                "Los Angeles Unified": ["Hollywood High", "Venice High"],
-                "San Diego Unified": ["La Jolla High", "Madison High"]
-            }
-        };
+        // Initialize Data
+        data = processData(csvRaw);
 
-        // --- 2. DOM ELEMENTS ---
-        const stateSelect = document.getElementById('stateDropdown');
-        const districtSelect = document.getElementById('districtDropdown');
-        const siteSelect = document.getElementById('siteDropdown');
-        const stateInput = document.getElementById('stateInput');
+        // --- 3. WIDGET DOM ELEMENTS ---
+        const stateSelect = document.getElementById('stateSelect');
+        const districtSelect = document.getElementById('districtSelect');
         const districtInput = document.getElementById('districtInput');
+        const siteSelect = document.getElementById('siteSelect');
         const siteInput = document.getElementById('siteInput');
 
-        // --- 3. INITIALIZATION ---
-        (function() {
-            Object.keys(data).forEach(state => {
+        // --- 4. POPULATION FUNCTIONS ---
+
+        function populateStates() {
+            stateSelect.innerHTML = '<option value="">Select State...</option>';
+            for (let state in data) {
                 let option = document.createElement('option');
                 option.value = state;
                 option.text = state;
                 stateSelect.add(option);
-            });
-            let otherOption = document.createElement('option');
-            otherOption.value = "Other";
-            otherOption.text = "Other";
-            stateSelect.add(otherOption);
-
-            JFCustomWidget.subscribe("ready", function(){
-                JFCustomWidget.requestFrameResize({height: document.body.offsetHeight});
-            });
-        })();
-
-        // --- 4. CORE LOGIC ---
-
-        function handleStateChange() {
-            const val = stateSelect.value;
-            resetDistrict();
-            resetSite();
-
-            if (val === "Other") {
-                stateInput.classList.remove('hidden');
-                districtSelect.classList.add('hidden');
-                districtInput.classList.remove('hidden');
-                siteSelect.classList.add('hidden');
-                siteInput.classList.remove('hidden');
-            } else if (val) {
-                stateInput.classList.add('hidden');
-                populateDistricts(val);
-                districtSelect.classList.remove('hidden');
-                districtInput.classList.add('hidden');
-                districtSelect.disabled = false;
-            } else {
-                stateInput.classList.add('hidden');
-                districtSelect.disabled = true;
             }
-            resizeAndBroadcast();
         }
-
-        function handleDistrictChange() {
-            const stateVal = stateSelect.value;
-            const distVal = districtSelect.value;
-            resetSite();
-
-            if (distVal === "Other") {
-                districtInput.classList.remove('hidden');
-                siteSelect.classList.add('hidden');
-                siteInput.classList.remove('hidden');
-            } else if (distVal) {
-                districtInput.classList.add('hidden');
-                populateSites(stateVal, distVal);
-                siteSelect.classList.remove('hidden');
-                siteInput.classList.add('hidden');
-                siteSelect.disabled = false;
-            } else {
-                districtInput.classList.add('hidden');
-                siteSelect.disabled = true;
-            }
-            resizeAndBroadcast();
-        }
-
-        function handleSiteChange() {
-            if (siteSelect.value === "Other") {
-                siteInput.classList.remove('hidden');
-            } else {
-                siteInput.classList.add('hidden');
-            }
-            resizeAndBroadcast();
-        }
-
-        // --- 5. EVENT LISTENERS ---
-        // Trigger updates on Dropdown changes AND Text Input changes
-        stateSelect.addEventListener('change', handleStateChange);
-        districtSelect.addEventListener('change', handleDistrictChange);
-        siteSelect.addEventListener('change', handleSiteChange);
-
-        // Listen for typing in the "Other" boxes
-        stateInput.addEventListener('input', resizeAndBroadcast);
-        districtInput.addEventListener('input', resizeAndBroadcast);
-        siteInput.addEventListener('input', resizeAndBroadcast);
-
-
-        // --- 6. DATA TRANSMISSION ---
-
-        function calculateCurrentValue() {
-            var result = {};
-            
-            // Determine Final State
-            if (stateSelect.value === "Other") result.state = stateInput.value || "Not Provided";
-            else result.state = stateSelect.value;
-
-            // Determine Final District
-            if (stateSelect.value === "Other" || districtSelect.value === "Other") result.district = districtInput.value || "Not Provided";
-            else result.district = districtSelect.value;
-
-            // Determine Final Site
-            if (stateSelect.value === "Other" || districtSelect.value === "Other" || siteSelect.value === "Other") result.site = siteInput.value || "Not Provided";
-            else result.site = siteSelect.value;
-
-            return {
-                valid: !!(result.state && result.district && result.site),
-                value: "State: " + result.state + ", District: " + result.district + ", Site: " + result.site
-            };
-        }
-
-        function resizeAndBroadcast() {
-            JFCustomWidget.requestFrameResize({height: document.body.offsetHeight});
-            
-            // THIS is the missing link. We send data to JotForm immediately on every change.
-            var data = calculateCurrentValue();
-            JFCustomWidget.sendData({ value: data.value });
-        }
-
-        JFCustomWidget.subscribe("submit", function() {
-            var data = calculateCurrentValue();
-            JFCustomWidget.sendSubmit(data);
-        });
-
-        // --- 7. HELPER FUNCTIONS ---
 
         function populateDistricts(state) {
             districtSelect.innerHTML = '<option value="">Select District...</option>';
+            districtInput.classList.add('hidden');
+            districtSelect.disabled = false;
+
             if (data[state]) {
-                Object.keys(data[state]).forEach(dist => {
+                for (let district in data[state]) {
                     let option = document.createElement('option');
-                    option.value = dist;
-                    option.text = dist;
+                    option.value = district;
+                    option.text = district;
                     districtSelect.add(option);
-                });
+                }
+                // Add Other Option
                 let other = document.createElement('option');
                 other.value = "Other";
                 other.text = "Other";
@@ -254,6 +780,9 @@
 
         function populateSites(state, district) {
             siteSelect.innerHTML = '<option value="">Select Site...</option>';
+            siteInput.classList.add('hidden');
+            siteSelect.disabled = false;
+
             if (data[state] && data[state][district]) {
                 data[state][district].forEach(site => {
                     let option = document.createElement('option');
@@ -261,6 +790,7 @@
                     option.text = site;
                     siteSelect.add(option);
                 });
+                // Add Other Option
                 let other = document.createElement('option');
                 other.value = "Other";
                 other.text = "Other";
@@ -268,21 +798,88 @@
             }
         }
 
+        // --- 5. RESET FUNCTIONS ---
+
         function resetDistrict() {
-            districtSelect.selectedIndex = 0;
+            districtSelect.innerHTML = '<option value="">Select District...</option>';
             districtSelect.disabled = true;
-            districtSelect.classList.remove('hidden');
             districtInput.classList.add('hidden');
             districtInput.value = "";
         }
 
         function resetSite() {
-            siteSelect.selectedIndex = 0;
+            siteSelect.innerHTML = '<option value="">Select Site...</option>';
             siteSelect.disabled = true;
-            siteSelect.classList.remove('hidden');
             siteInput.classList.add('hidden');
             siteInput.value = "";
         }
+
+        // --- 6. EVENT LISTENERS ---
+
+        stateSelect.addEventListener('change', function() {
+            resetDistrict();
+            resetSite();
+            if (this.value) {
+                populateDistricts(this.value);
+            }
+        });
+
+        districtSelect.addEventListener('change', function() {
+            resetSite();
+            if (this.value === "Other") {
+                districtInput.classList.remove('hidden');
+                // Enable site select anyway so they can type a site for a new district
+                siteSelect.disabled = false;
+                // Add Other to site automatically
+                let other = document.createElement('option');
+                other.value = "Other";
+                other.text = "Other";
+                siteSelect.add(other);
+                siteSelect.value = "Other";
+                siteInput.classList.remove('hidden');
+            } else if (this.value) {
+                districtInput.classList.add('hidden');
+                populateSites(stateSelect.value, this.value);
+            }
+        });
+
+        siteSelect.addEventListener('change', function() {
+            if (this.value === "Other") {
+                siteInput.classList.remove('hidden');
+            } else {
+                siteInput.classList.add('hidden');
+            }
+        });
+
+        // --- 7. JOTFORM WIDGET LOGIC ---
+
+        // Initialize
+        JFCustomWidget.subscribe("ready", function(){
+            populateStates();
+            JFCustomWidget.requestFrameResize({height: 250});
+        });
+
+        // Handle Submit
+        JFCustomWidget.subscribe("submit", function(){
+            var result = {
+                valid: true,
+                value: ""
+            };
+
+            var state = stateSelect.value;
+            var district = (districtSelect.value === "Other") ? districtInput.value : districtSelect.value;
+            var site = (siteSelect.value === "Other") ? siteInput.value : siteSelect.value;
+
+            // Simple validation: Ensure fields are filled if parent is selected
+            if (state && district && site) {
+                // Formatting the output string for JotForm
+                result.value = state + " - " + district + " - " + site;
+            } else {
+                result.valid = false;
+            }
+
+            JFCustomWidget.sendSubmit(result);
+        });
 
     </script>
 </body>
