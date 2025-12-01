@@ -94,7 +94,7 @@
 
     <script>
         // --- DATA SECTION ---
-        // This variable contains the raw CSV data from your Google Sheet.
+        // Complete data from your file.
         const csvRaw = `site,state,district
 Academy For Academics & Arts,AL,Huntsville
 Academy For Science & Foreign Language,AL,Huntsville
@@ -127,7 +127,13 @@ Granada Elementary,CA,Alhambra
 Marguerita Elementary,CA,Alhambra
 Repetto Elementary,CA,Alhambra
 Carl E. Gilbert Elementary School,CA,Buena Park
+Corey Elementary School,CA,Buena Park
+Emery Elementary School,CA,Buena Park
+James A. Whitaker Elementary School,CA,Buena Park
 Mabel L. Pendleton Elementary School,CA,Buena Park
+Gordon H. Beatty Elementary,CA,Buena Park
+Arthur F. Turner Academy,CA,Buena Park
+Charles G. Emery Elementary,CA,Buena Park
 Anna Kyle Elementary School,CA,Fairfield-Suisun
 Cordelia Hills Elementary School,CA,Fairfield-Suisun
 David Weir Academy,CA,Fairfield-Suisun
@@ -427,8 +433,8 @@ Bernard F. Norton School,RI,Cumberland
 Community School,RI,Cumberland
 Garvin Memorial School,RI,Cumberland
 J.J. McLaughlin Cumberland Hill Elementary School,RI,Cumberland
-Howard W Hathaway Elementary,RI,PortsmouthRI
-Melville Elementary School,RI,PortsmouthRI
+Howard W Hathaway Elementary,RI,Portsmouth
+Melville Elementary School,RI,Portsmouth
 Cedar Hill Elementary,RI,Warwick
 Holliman Elementary,RI,Warwick
 Lippitt Elementary,RI,Warwick
@@ -677,7 +683,7 @@ Elephants Fork Elementary School,VA,Suffolk
 Florence Bowser Elementary School,VA,Suffolk
 Hillpoint Elementary School,VA,Suffolk
 Kilby Shores Elementary School,VA,Suffolk
-Mack Benn, Jr. Elementary School,VA,Suffolk
+"Mack Benn, Jr. Elementary School",VA,Suffolk
 Nansemond Parkway Elementary School,VA,Suffolk
 Northern Shores Elementary School,VA,Suffolk
 Southwestern Elementary School,VA,Suffolk
@@ -694,9 +700,10 @@ Wright Denny Intermediate School,WV,Jefferson`;
         // --- 2. DATA PROCESSING LOGIC ---
         let data = {};
 
-        // Function to parse CSV respecting quotes (e.g., "Mack Benn, Jr. Elementary School")
+        // Robust CSV Parser that handles spaces, commas in quotes, etc.
         function processData(csvText) {
-            const lines = csvText.trim().split('\n');
+            // Split by newline, handling both \r\n and \n
+            const lines = csvText.trim().split(/\r?\n/);
             const result = {};
             
             // Start at 1 to skip header if first line contains "site"
@@ -706,16 +713,37 @@ Wright Denny Intermediate School,WV,Jefferson`;
                 const line = lines[i].trim();
                 if (!line) continue;
 
-                // Regex to split by comma but ignore commas inside quotes
-                const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                const parts = [];
+                let current = '';
+                let inQuote = false;
                 
+                // Parse character by character
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuote = !inQuote;
+                        // Keep quote in current if needed, or just toggle flag
+                        // Here we toggle flag. We'll strip surrounding quotes later.
+                        current += char;
+                    } else if (char === ',' && !inQuote) {
+                        parts.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                // Push the last field
+                parts.push(current.trim());
+
                 // We expect 3 parts: Site, State, District
-                if (parts && parts.length >= 3) {
-                    // Clean quotes and extra spaces
-                    // The order is Site (0), State (1), District (2) based on your CSV structure
-                    const site = parts[0].replace(/^"|"$/g, '').trim(); 
-                    const state = parts[1].replace(/^"|"$/g, '').trim();
-                    const district = parts[2].replace(/^"|"$/g, '').trim();
+                if (parts.length >= 3) {
+                    // Clean quotes from the values
+                    // Remove leading/trailing quotes if they exist
+                    const clean = (val) => val.replace(/^"|"$/g, '').trim();
+
+                    const site = clean(parts[0]);
+                    const state = clean(parts[1]);
+                    const district = clean(parts[2]);
 
                     if (!result[state]) result[state] = {};
                     if (!result[state][district]) result[state][district] = [];
@@ -724,7 +752,7 @@ Wright Denny Intermediate School,WV,Jefferson`;
                 }
             }
             
-            // Sort keys alphabetically for better UX
+            // Sort keys alphabetically
             const sortedResult = {};
             Object.keys(result).sort().forEach(state => {
                 sortedResult[state] = {};
